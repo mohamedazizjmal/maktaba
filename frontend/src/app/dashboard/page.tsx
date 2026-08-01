@@ -11,8 +11,9 @@ export default function Dashboard() {
   const [search, setSearch] = useState('')
   const [results, setResults] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<'discover' | 'library' | 'reviews'>('discover')
+  const [activeTab, setActiveTab] = useState<'discover' | 'library' | 'reviews' | 'foryou'>('discover')
   const [myReviews, setMyReviews] = useState<any[]>([])
+  const [recommendations, setRecommendations] = useState<any[]>([])
   const [reviewForm, setReviewForm] = useState({
     book_id: '',
     book_title: '',
@@ -30,6 +31,7 @@ export default function Dashboard() {
     }
     fetchShelves()
     fetchMyReviews()
+    fetchRecommendations()
   }, [])
 
   const fetchShelves = async () => {
@@ -45,6 +47,15 @@ export default function Dashboard() {
     try {
       const res = await api.get('/reviews/me')
       setMyReviews(res.data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const fetchRecommendations = async () => {
+    try {
+      const res = await api.get('/recommendations/')
+      setRecommendations(res.data.recommendations)
     } catch (err) {
       console.error(err)
     }
@@ -72,6 +83,7 @@ export default function Dashboard() {
         progress_pages: 0
       })
       fetchShelves()
+      fetchRecommendations()
       alert(`Added to ${shelf_type.replace('_', ' ')} !`)
     } catch (err) {
       console.error(err)
@@ -157,6 +169,7 @@ export default function Dashboard() {
             { key: 'discover', label: '🔍 Discover' },
             { key: 'library', label: '📚 My Library' },
             { key: 'reviews', label: '⭐ My Reviews' },
+            { key: 'foryou', label: '🤖 For You' },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -268,13 +281,11 @@ export default function Dashboard() {
           <div>
             <h2 className="text-2xl font-bold mb-6">My Reviews</h2>
 
-            {/* Review Form */}
             {showReviewForm && (
               <div className="bg-gray-900 border border-blue-800 rounded-xl p-6 mb-6">
                 <h3 className="font-semibold mb-4 text-blue-400">
                   Write a review for <span className="text-white">{reviewForm.book_title}</span>
                 </h3>
-
                 <div className="mb-4">
                   <label className="block text-sm text-gray-400 mb-2">Rating</label>
                   <StarRating
@@ -282,7 +293,6 @@ export default function Dashboard() {
                     onChange={(v) => setReviewForm({ ...reviewForm, rating: v })}
                   />
                 </div>
-
                 <div className="mb-4">
                   <label className="block text-sm text-gray-400 mb-2">Your review</label>
                   <textarea
@@ -293,7 +303,6 @@ export default function Dashboard() {
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 resize-none"
                   />
                 </div>
-
                 <div className="flex items-center gap-2 mb-4">
                   <input
                     type="checkbox"
@@ -302,29 +311,19 @@ export default function Dashboard() {
                     onChange={(e) => setReviewForm({ ...reviewForm, contains_spoiler: e.target.checked })}
                     className="w-4 h-4"
                   />
-                  <label htmlFor="spoiler" className="text-sm text-gray-400">
-                    Contains spoilers
-                  </label>
+                  <label htmlFor="spoiler" className="text-sm text-gray-400">Contains spoilers</label>
                 </div>
-
                 <div className="flex gap-3">
-                  <button
-                    onClick={submitReview}
-                    className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg text-sm font-medium transition"
-                  >
+                  <button onClick={submitReview} className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg text-sm font-medium transition">
                     Submit Review
                   </button>
-                  <button
-                    onClick={() => setShowReviewForm(false)}
-                    className="bg-gray-800 hover:bg-gray-700 px-6 py-2 rounded-lg text-sm font-medium transition"
-                  >
+                  <button onClick={() => setShowReviewForm(false)} className="bg-gray-800 hover:bg-gray-700 px-6 py-2 rounded-lg text-sm font-medium transition">
                     Cancel
                   </button>
                 </div>
               </div>
             )}
 
-            {/* My Reviews List */}
             {myReviews.length === 0 && !showReviewForm ? (
               <div className="text-center py-16 text-gray-500">
                 <p className="text-4xl mb-3">⭐</p>
@@ -339,10 +338,7 @@ export default function Dashboard() {
                         <h3 className="font-semibold text-white">{review.book_title}</h3>
                         <StarRating value={review.rating} />
                       </div>
-                      <button
-                        onClick={() => deleteReview(review.id)}
-                        className="text-xs text-red-400 hover:text-red-300 transition"
-                      >
+                      <button onClick={() => deleteReview(review.id)} className="text-xs text-red-400 hover:text-red-300 transition">
                         Delete
                       </button>
                     </div>
@@ -363,6 +359,50 @@ export default function Dashboard() {
             )}
           </div>
         )}
+
+        {/* FOR YOU TAB */}
+        {activeTab === 'foryou' && (
+          <div>
+            <h2 className="text-2xl font-bold mb-2">For You</h2>
+            <p className="text-gray-400 mb-6 text-sm">
+              Personalized recommendations based on your reading history
+            </p>
+
+            {recommendations.length === 0 ? (
+              <div className="text-center py-16 text-gray-500">
+                <p className="text-4xl mb-3">🤖</p>
+                <p>Add more books to your shelves to get personalized recommendations!</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {recommendations.map((rec) => (
+                  <div key={rec.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+                    <div className="flex gap-3">
+                      {rec.cover_url ? (
+                        <img src={rec.cover_url} alt={rec.title} className="w-16 h-24 object-cover rounded-lg flex-shrink-0" />
+                      ) : (
+                        <div className="w-16 h-24 bg-gray-800 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <span className="text-2xl">📚</span>
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-sm mb-1 line-clamp-2">{rec.title}</h3>
+                        <p className="text-gray-400 text-xs mb-2">{rec.authors?.join(', ')}</p>
+                        {rec.average_rating > 0 && (
+                          <p className="text-yellow-400 text-xs mb-2">★ {rec.average_rating.toFixed(1)}</p>
+                        )}
+                        <span className="text-xs bg-blue-900 text-blue-300 px-2 py-0.5 rounded-full">
+                          {rec.reason}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
     </div>
   )

@@ -11,6 +11,16 @@ export default function Dashboard() {
   const [search, setSearch] = useState('')
   const [results, setResults] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState<'discover' | 'library' | 'reviews'>('discover')
+  const [myReviews, setMyReviews] = useState<any[]>([])
+  const [reviewForm, setReviewForm] = useState({
+    book_id: '',
+    book_title: '',
+    rating: 5,
+    content: '',
+    contains_spoiler: false
+  })
+  const [showReviewForm, setShowReviewForm] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -19,12 +29,22 @@ export default function Dashboard() {
       return
     }
     fetchShelves()
+    fetchMyReviews()
   }, [])
 
   const fetchShelves = async () => {
     try {
       const res = await api.get('/shelves/')
       setShelves(res.data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const fetchMyReviews = async () => {
+    try {
+      const res = await api.get('/reviews/me')
+      setMyReviews(res.data)
     } catch (err) {
       console.error(err)
     }
@@ -58,10 +78,62 @@ export default function Dashboard() {
     }
   }
 
+  const openReviewForm = (shelf: any) => {
+    setReviewForm({
+      book_id: shelf.book_id,
+      book_title: shelf.book_title,
+      rating: 5,
+      content: '',
+      contains_spoiler: false
+    })
+    setShowReviewForm(true)
+    setActiveTab('reviews')
+  }
+
+  const submitReview = async () => {
+    try {
+      await api.post('/reviews/', {
+        book_id: reviewForm.book_id,
+        rating: reviewForm.rating,
+        content: reviewForm.content,
+        contains_spoiler: reviewForm.contains_spoiler
+      })
+      setShowReviewForm(false)
+      fetchMyReviews()
+      alert('Review submitted !')
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Error submitting review')
+    }
+  }
+
+  const deleteReview = async (reviewId: string) => {
+    if (!confirm('Delete this review?')) return
+    try {
+      await api.delete(`/reviews/${reviewId}`)
+      fetchMyReviews()
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   const handleLogout = () => {
     logout()
     router.push('/')
   }
+
+  const StarRating = ({ value, onChange }: { value: number, onChange?: (v: number) => void }) => (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          onClick={() => onChange && onChange(star)}
+          className={`text-2xl transition ${star <= value ? 'text-yellow-400' : 'text-gray-600'} ${onChange ? 'hover:text-yellow-300 cursor-pointer' : 'cursor-default'}`}
+        >
+          ★
+        </button>
+      ))}
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
@@ -72,117 +144,225 @@ export default function Dashboard() {
           <span className="text-gray-400 text-sm">
             Hello, {user?.full_name || user?.username || 'Reader'} 👋
           </span>
-          <button
-            onClick={handleLogout}
-            className="text-sm text-gray-400 hover:text-white transition"
-          >
+          <button onClick={handleLogout} className="text-sm text-gray-400 hover:text-white transition">
             Logout
           </button>
         </div>
       </nav>
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* Search */}
-        <div className="mb-10">
-          <h2 className="text-2xl font-bold mb-4">Discover Books</h2>
-          <div className="flex gap-3">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && searchBooks()}
-              placeholder="Search any book..."
-              className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
-            />
+      {/* Tabs */}
+      <div className="border-b border-gray-800 px-6">
+        <div className="flex gap-6">
+          {[
+            { key: 'discover', label: '🔍 Discover' },
+            { key: 'library', label: '📚 My Library' },
+            { key: 'reviews', label: '⭐ My Reviews' },
+          ].map((tab) => (
             <button
-              onClick={searchBooks}
-              disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-medium transition disabled:opacity-50"
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key as any)}
+              className={`py-4 text-sm font-medium border-b-2 transition ${
+                activeTab === tab.key
+                  ? 'border-blue-500 text-white'
+                  : 'border-transparent text-gray-400 hover:text-white'
+              }`}
             >
-              {loading ? 'Searching...' : 'Search'}
+              {tab.label}
             </button>
-          </div>
-
-          {/* Search Results */}
-          {results.length > 0 && (
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {results.map((book) => (
-                <div key={book.open_library_id} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-                  {book.cover_url && (
-                    <img
-                      src={book.cover_url}
-                      alt={book.title}
-                      className="w-20 h-28 object-cover rounded-lg mb-3"
-                    />
-                  )}
-                  <h3 className="font-semibold text-sm mb-1 line-clamp-2">{book.title}</h3>
-                  <p className="text-gray-400 text-xs mb-3">{book.authors?.join(', ')}</p>
-                  <div className="flex gap-2 flex-wrap">
-                    <button
-                      onClick={() => addToShelf(book, 'want_to_read')}
-                      className="text-xs bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded transition"
-                    >
-                      📖 Want to read
-                    </button>
-                    <button
-                      onClick={() => addToShelf(book, 'reading')}
-                      className="text-xs bg-blue-900 hover:bg-blue-800 px-2 py-1 rounded transition"
-                    >
-                      📚 Reading
-                    </button>
-                    <button
-                      onClick={() => addToShelf(book, 'read')}
-                      className="text-xs bg-green-900 hover:bg-green-800 px-2 py-1 rounded transition"
-                    >
-                      ✅ Read
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          ))}
         </div>
+      </div>
 
-        {/* My Library */}
-        <div>
-          <h2 className="text-2xl font-bold mb-4">My Library</h2>
-          {shelves.length === 0 ? (
-            <div className="text-center py-16 text-gray-500">
-              <p className="text-4xl mb-3">📚</p>
-              <p>Your library is empty — search for books and add them!</p>
+      <div className="max-w-6xl mx-auto px-6 py-8">
+
+        {/* DISCOVER TAB */}
+        {activeTab === 'discover' && (
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Discover Books</h2>
+            <div className="flex gap-3 mb-6">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && searchBooks()}
+                placeholder="Search any book..."
+                className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
+              />
+              <button
+                onClick={searchBooks}
+                disabled={loading}
+                className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-medium transition disabled:opacity-50"
+              >
+                {loading ? 'Searching...' : 'Search'}
+              </button>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {['want_to_read', 'reading', 'read'].map((type) => (
-                <div key={type} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-                  <h3 className="font-semibold mb-3 text-gray-300">
-                    {type === 'want_to_read' ? '📖 Want to Read'
-                      : type === 'reading' ? '📚 Reading'
-                      : '✅ Read'}
-                    <span className="ml-2 text-xs bg-gray-800 px-2 py-0.5 rounded-full">
-                      {shelves.filter(s => s.shelf_type === type).length}
-                    </span>
-                  </h3>
-                  {shelves.filter(s => s.shelf_type === type).map((shelf) => (
-                    <div key={shelf.id} className="flex items-center gap-3 py-2 border-b border-gray-800 last:border-0">
-                      {shelf.book_cover && (
-                        <img
-                          src={shelf.book_cover}
-                          alt=""
-                          className="w-8 h-12 object-cover rounded"
-                        />
-                      )}
-                      <div>
-                        <p className="text-sm text-white">{shelf.book_title || 'Unknown book'}</p>
-                        <p className="text-xs text-gray-500">{shelf.book_authors?.join(', ')}</p>
-                      </div>
+
+            {results.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {results.map((book) => (
+                  <div key={book.open_library_id} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+                    {book.cover_url && (
+                      <img src={book.cover_url} alt={book.title} className="w-20 h-28 object-cover rounded-lg mb-3" />
+                    )}
+                    <h3 className="font-semibold text-sm mb-1 line-clamp-2">{book.title}</h3>
+                    <p className="text-gray-400 text-xs mb-3">{book.authors?.join(', ')}</p>
+                    <div className="flex gap-2 flex-wrap">
+                      <button onClick={() => addToShelf(book, 'want_to_read')} className="text-xs bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded transition">📖 Want to read</button>
+                      <button onClick={() => addToShelf(book, 'reading')} className="text-xs bg-blue-900 hover:bg-blue-800 px-2 py-1 rounded transition">📚 Reading</button>
+                      <button onClick={() => addToShelf(book, 'read')} className="text-xs bg-green-900 hover:bg-green-800 px-2 py-1 rounded transition">✅ Read</button>
                     </div>
-                  ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* LIBRARY TAB */}
+        {activeTab === 'library' && (
+          <div>
+            <h2 className="text-2xl font-bold mb-4">My Library</h2>
+            {shelves.length === 0 ? (
+              <div className="text-center py-16 text-gray-500">
+                <p className="text-4xl mb-3">📚</p>
+                <p>Your library is empty — search for books and add them!</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {['want_to_read', 'reading', 'read'].map((type) => (
+                  <div key={type} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+                    <h3 className="font-semibold mb-3 text-gray-300">
+                      {type === 'want_to_read' ? '📖 Want to Read' : type === 'reading' ? '📚 Reading' : '✅ Read'}
+                      <span className="ml-2 text-xs bg-gray-800 px-2 py-0.5 rounded-full">
+                        {shelves.filter(s => s.shelf_type === type).length}
+                      </span>
+                    </h3>
+                    {shelves.filter(s => s.shelf_type === type).map((shelf) => (
+                      <div key={shelf.id} className="flex items-center gap-3 py-2 border-b border-gray-800 last:border-0">
+                        {shelf.book_cover && (
+                          <img src={shelf.book_cover} alt="" className="w-8 h-12 object-cover rounded" />
+                        )}
+                        <div className="flex-1">
+                          <p className="text-sm text-white">{shelf.book_title || 'Unknown book'}</p>
+                          <p className="text-xs text-gray-500">{shelf.book_authors?.join(', ')}</p>
+                        </div>
+                        {type === 'read' && (
+                          <button
+                            onClick={() => openReviewForm(shelf)}
+                            className="text-xs text-yellow-400 hover:text-yellow-300 transition"
+                          >
+                            ★ Review
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* REVIEWS TAB */}
+        {activeTab === 'reviews' && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">My Reviews</h2>
+
+            {/* Review Form */}
+            {showReviewForm && (
+              <div className="bg-gray-900 border border-blue-800 rounded-xl p-6 mb-6">
+                <h3 className="font-semibold mb-4 text-blue-400">
+                  Write a review for <span className="text-white">{reviewForm.book_title}</span>
+                </h3>
+
+                <div className="mb-4">
+                  <label className="block text-sm text-gray-400 mb-2">Rating</label>
+                  <StarRating
+                    value={reviewForm.rating}
+                    onChange={(v) => setReviewForm({ ...reviewForm, rating: v })}
+                  />
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm text-gray-400 mb-2">Your review</label>
+                  <textarea
+                    value={reviewForm.content}
+                    onChange={(e) => setReviewForm({ ...reviewForm, content: e.target.value })}
+                    placeholder="What did you think of this book?"
+                    rows={4}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 resize-none"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 mb-4">
+                  <input
+                    type="checkbox"
+                    id="spoiler"
+                    checked={reviewForm.contains_spoiler}
+                    onChange={(e) => setReviewForm({ ...reviewForm, contains_spoiler: e.target.checked })}
+                    className="w-4 h-4"
+                  />
+                  <label htmlFor="spoiler" className="text-sm text-gray-400">
+                    Contains spoilers
+                  </label>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={submitReview}
+                    className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg text-sm font-medium transition"
+                  >
+                    Submit Review
+                  </button>
+                  <button
+                    onClick={() => setShowReviewForm(false)}
+                    className="bg-gray-800 hover:bg-gray-700 px-6 py-2 rounded-lg text-sm font-medium transition"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* My Reviews List */}
+            {myReviews.length === 0 && !showReviewForm ? (
+              <div className="text-center py-16 text-gray-500">
+                <p className="text-4xl mb-3">⭐</p>
+                <p>No reviews yet — go to My Library and review a book you've read!</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {myReviews.map((review) => (
+                  <div key={review.id} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h3 className="font-semibold text-white">{review.book_title}</h3>
+                        <StarRating value={review.rating} />
+                      </div>
+                      <button
+                        onClick={() => deleteReview(review.id)}
+                        className="text-xs text-red-400 hover:text-red-300 transition"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                    {review.contains_spoiler && (
+                      <span className="text-xs bg-red-900 text-red-300 px-2 py-0.5 rounded-full mb-2 inline-block">
+                        ⚠️ Spoiler
+                      </span>
+                    )}
+                    {review.content && (
+                      <p className="text-gray-300 text-sm mt-2">{review.content}</p>
+                    )}
+                    <p className="text-gray-600 text-xs mt-3">
+                      {new Date(review.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/api'
+import Link from 'next/link'
 
 export default function Dashboard() {
   const router = useRouter()
@@ -156,6 +157,12 @@ export default function Dashboard() {
           <span className="text-gray-400 text-sm">
             Hello, {user?.full_name || user?.username || 'Reader'} 👋
           </span>
+          <Link
+            href="/chat"
+            className="text-sm bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition"
+          >
+            🤖 AI Chat
+          </Link>
           <button onClick={handleLogout} className="text-sm text-gray-400 hover:text-white transition">
             Logout
           </button>

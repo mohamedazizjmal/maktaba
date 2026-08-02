@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080
     OPEN_LIBRARY_BASE_URL: str = "https://openlibrary.org"
+    GROQ_API_KEY: str = ""
 
     class Config:
         env_file = ".env"

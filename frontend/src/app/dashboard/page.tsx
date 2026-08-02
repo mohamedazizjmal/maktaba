@@ -167,6 +167,12 @@ const openBook = async (book: any) => {
             Hello, {user?.full_name || user?.username || 'Reader'} 👋
           </span>
           <Link
+          href="/profile"
+          className="text-sm text-gray-400 hover:text-white transition"
+          >
+          👤 Profile
+          </Link>
+          <Link
             href="/chat"
             className="text-sm bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition"
           >

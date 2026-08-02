@@ -224,7 +224,9 @@ export default function Dashboard() {
                     {book.cover_url && (
                       <img src={book.cover_url} alt={book.title} className="w-20 h-28 object-cover rounded-lg mb-3" />
                     )}
-                    <h3 className="font-semibold text-sm mb-1 line-clamp-2">{book.title}</h3>
+                    <Link href={`/book/${book.open_library_id}`}>
+                      <h3 className="font-semibold text-sm mb-1 line-clamp-2 hover:text-blue-400 transition cursor-pointer">{book.title}</h3>
+                    </Link>
                     <p className="text-gray-400 text-xs mb-3">{book.authors?.join(', ')}</p>
                     <div className="flex gap-2 flex-wrap">
                       <button onClick={() => addToShelf(book, 'want_to_read')} className="text-xs bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded transition">📖 Want to read</button>
@@ -263,7 +265,9 @@ export default function Dashboard() {
                           <img src={shelf.book_cover} alt="" className="w-8 h-12 object-cover rounded" />
                         )}
                         <div className="flex-1">
-                          <p className="text-sm text-white">{shelf.book_title || 'Unknown book'}</p>
+                          <Link href={`/book/${shelf.book_id}`} className="text-sm text-white hover:text-blue-400 transition">
+                            {shelf.book_title || 'Unknown book'}
+                          </Link>
                           <p className="text-xs text-gray-500">{shelf.book_authors?.join(', ')}</p>
                         </div>
                         {type === 'read' && (

@@ -91,6 +91,15 @@ export default function Dashboard() {
     }
   }
 
+const openBook = async (book: any) => {
+  try {
+    const saved = await api.post(`/books/save?ol_id=${book.open_library_id}`)
+    router.push(`/book/${saved.data.id}`)
+  } catch (err) {
+    console.error(err)
+  }
+}
+
   const openReviewForm = (shelf: any) => {
     setReviewForm({
       book_id: shelf.book_id,
@@ -224,9 +233,12 @@ export default function Dashboard() {
                     {book.cover_url && (
                       <img src={book.cover_url} alt={book.title} className="w-20 h-28 object-cover rounded-lg mb-3" />
                     )}
-                    <Link href={`/book/${book.open_library_id}`}>
-                      <h3 className="font-semibold text-sm mb-1 line-clamp-2 hover:text-blue-400 transition cursor-pointer">{book.title}</h3>
-                    </Link>
+                    <h3
+                    onClick={() => openBook(book)}
+                    className="font-semibold text-sm mb-1 line-clamp-2 hover:text-blue-400 transition cursor-pointer"
+                    >
+                    {book.title}
+                    </h3>
                     <p className="text-gray-400 text-xs mb-3">{book.authors?.join(', ')}</p>
                     <div className="flex gap-2 flex-wrap">
                       <button onClick={() => addToShelf(book, 'want_to_read')} className="text-xs bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded transition">📖 Want to read</button>

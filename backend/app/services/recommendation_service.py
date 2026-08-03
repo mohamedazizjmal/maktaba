@@ -1,4 +1,4 @@
-import numpy as np
+
 from sqlalchemy.orm import Session
 from app.models.book import Book
 from app.models.shelf import Shelf

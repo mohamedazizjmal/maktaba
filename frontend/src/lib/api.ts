@@ -1,13 +1,12 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: 'http://localhost:3500/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3500/api',
   headers: {
     'Content-Type': 'application/json',
   },
 })
 
-// Ajoute automatiquement le token à chaque requête
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
   if (token) {

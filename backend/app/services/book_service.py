@@ -8,13 +8,32 @@ OPEN_LIBRARY_URL = "https://openlibrary.org"
 
 async def search_open_library(query: str, limit: int = 10) -> List[OpenLibraryBook]:
     """Recherche des livres sur Open Library API."""
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{OPEN_LIBRARY_URL}/search.json",
-            params={"q": query, "limit": limit, "fields": "key,title,author_name,cover_i,first_publish_year,isbn,subject"},
-            timeout=10.0
-        )
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(
+                f"{OPEN_LIBRARY_URL}/search.json",
+                params={
+                    "q": query,
+                    "limit": limit,
+                    "fields": "key,title,author_name,cover_i,first_publish_year,isbn,subject"
+                },
+                headers={"User-Agent": "Maktaba/1.0 (contact@maktaba.com)"},
+                follow_redirects=True,
+                timeout=30.0
+            )
+
+        if response.status_code != 200:
+            return []
+
+        text = response.text.strip()
+        if not text:
+            return []
+
         data = response.json()
+
+    except Exception as e:
+        print(f"Open Library error: {e}")
+        return []
 
     books = []
     for doc in data.get("docs", []):

@@ -5,9 +5,14 @@ import Link from 'next/link'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 
+const G = {
+  purple: 'linear-gradient(135deg, #6366F1, #A855F7)',
+  text: { background: 'linear-gradient(135deg, #818CF8, #C084FC, #F472B6)', WebkitBackgroundClip: 'text' as const, WebkitTextFillColor: 'transparent' as const },
+}
+
 export default function LoginPage() {
   const router = useRouter()
-  const setAuth = useAuthStore((s) => s.setAuth)
+  const setAuth = useAuthStore(s => s.setAuth)
   const [form, setForm] = useState({ email: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -28,54 +33,76 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 w-full max-w-md">
-        <h1 className="text-2xl font-bold text-white mb-2">Welcome back</h1>
-        <p className="text-gray-400 mb-6">Sign in to your Maktaba account</p>
+    <div style={{ minHeight: '100vh', background: '#0D0D1A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', padding: '24px' }}>
+      
+      {/* Background glow */}
+      <div style={{ position: 'fixed', top: '30%', left: '50%', transform: 'translate(-50%, -50%)', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
-        {error && (
-          <div className="bg-red-900/30 border border-red-800 text-red-400 px-4 py-3 rounded-lg mb-4 text-sm">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Email</label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
-              placeholder="you@example.com"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Password</label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
-              placeholder="••••••••"
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white py-3 rounded-lg font-medium transition"
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
-
-        <p className="text-center text-gray-400 mt-6 text-sm">
-          Don't have an account?{' '}
-          <Link href="/register" className="text-blue-400 hover:underline">
-            Sign up
+      <div style={{ width: '100%', maxWidth: '420px', position: 'relative' }}>
+        
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '8px' }}>
+              <span style={{ fontSize: '32px' }}>📚</span>
+              <span style={{ fontSize: '24px', fontWeight: '800', ...G.text }}>Maktaba</span>
+            </div>
           </Link>
+          <h1 style={{ fontSize: '28px', fontWeight: '700', color: 'white', marginBottom: '8px' }}>Welcome back</h1>
+          <p style={{ color: '#6B7280', fontSize: '15px' }}>Sign in to continue reading</p>
+        </div>
+
+        {/* Card */}
+        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '32px' }}>
+          
+          {error && (
+            <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '12px', padding: '12px 16px', color: '#EF4444', fontSize: '14px', marginBottom: '20px' }}>
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', color: '#9CA3AF', fontSize: '13px', marginBottom: '8px', fontWeight: '500' }}>Email</label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={e => setForm({ ...form, email: e.target.value })}
+                placeholder="you@example.com"
+                required
+                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '14px 16px', color: 'white', fontSize: '15px', outline: 'none', boxSizing: 'border-box' }}
+                onFocus={e => e.target.style.borderColor = 'rgba(99,102,241,0.6)'}
+                onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+              />
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', color: '#9CA3AF', fontSize: '13px', marginBottom: '8px', fontWeight: '500' }}>Password</label>
+              <input
+                type="password"
+                value={form.password}
+                onChange={e => setForm({ ...form, password: e.target.value })}
+                placeholder="••••••••"
+                required
+                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '14px 16px', color: 'white', fontSize: '15px', outline: 'none', boxSizing: 'border-box' }}
+                onFocus={e => e.target.style.borderColor = 'rgba(99,102,241,0.6)'}
+                onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              style={{ width: '100%', background: loading ? 'rgba(99,102,241,0.5)' : G.purple, border: 'none', borderRadius: '12px', padding: '14px', color: 'white', fontSize: '15px', fontWeight: '600', cursor: loading ? 'not-allowed' : 'pointer', boxShadow: '0 4px 20px rgba(99,102,241,0.4)' }}
+            >
+              {loading ? 'Signing in...' : 'Sign In →'}
+            </button>
+          </form>
+        </div>
+
+        <p style={{ textAlign: 'center', color: '#6B7280', fontSize: '14px', marginTop: '24px' }}>
+          Don't have an account?{' '}
+          <Link href="/register" style={{ color: '#818CF8', textDecoration: 'none', fontWeight: '600' }}>Sign up free</Link>
         </p>
       </div>
     </div>

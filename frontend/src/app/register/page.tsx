@@ -5,9 +5,14 @@ import Link from 'next/link'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 
+const G = {
+  purple: 'linear-gradient(135deg, #6366F1, #A855F7)',
+  text: { background: 'linear-gradient(135deg, #818CF8, #C084FC, #F472B6)', WebkitBackgroundClip: 'text' as const, WebkitTextFillColor: 'transparent' as const },
+}
+
 export default function RegisterPage() {
   const router = useRouter()
-  const setAuth = useAuthStore((s) => s.setAuth)
+  const setAuth = useAuthStore(s => s.setAuth)
   const [form, setForm] = useState({ email: '', username: '', password: '', full_name: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -27,76 +32,69 @@ export default function RegisterPage() {
     }
   }
 
+  const inputStyle = {
+    width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: '12px', padding: '14px 16px', color: 'white', fontSize: '15px', outline: 'none', boxSizing: 'border-box' as const
+  }
+
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 w-full max-w-md">
-        <h1 className="text-2xl font-bold text-white mb-2">Create account</h1>
-        <p className="text-gray-400 mb-6">Join Maktaba and start your reading journey</p>
+    <div style={{ minHeight: '100vh', background: '#0D0D1A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', padding: '24px' }}>
+      <div style={{ position: 'fixed', top: '30%', left: '50%', transform: 'translate(-50%, -50%)', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(168,85,247,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
-        {error && (
-          <div className="bg-red-900/30 border border-red-800 text-red-400 px-4 py-3 rounded-lg mb-4 text-sm">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Full Name</label>
-            <input
-              type="text"
-              value={form.full_name}
-              onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
-              placeholder="John Doe"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Username</label>
-            <input
-              type="text"
-              value={form.username}
-              onChange={(e) => setForm({ ...form, username: e.target.value })}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
-              placeholder="johndoe"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Email</label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
-              placeholder="you@example.com"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Password</label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500"
-              placeholder="••••••••"
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white py-3 rounded-lg font-medium transition"
-          >
-            {loading ? 'Creating account...' : 'Create Account'}
-          </button>
-        </form>
-
-        <p className="text-center text-gray-400 mt-6 text-sm">
-          Already have an account?{' '}
-          <Link href="/login" className="text-blue-400 hover:underline">
-            Sign in
+      <div style={{ width: '100%', maxWidth: '420px', position: 'relative' }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '8px' }}>
+              <span style={{ fontSize: '32px' }}>📚</span>
+              <span style={{ fontSize: '24px', fontWeight: '800', ...G.text }}>Maktaba</span>
+            </div>
           </Link>
+          <h1 style={{ fontSize: '28px', fontWeight: '700', color: 'white', marginBottom: '8px' }}>Create account</h1>
+          <p style={{ color: '#6B7280', fontSize: '15px' }}>Start your reading journey today</p>
+        </div>
+
+        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '32px' }}>
+          {error && (
+            <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '12px', padding: '12px 16px', color: '#EF4444', fontSize: '14px', marginBottom: '20px' }}>
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            {[
+              { label: 'Full Name', key: 'full_name', type: 'text', placeholder: 'John Doe' },
+              { label: 'Username', key: 'username', type: 'text', placeholder: 'johndoe' },
+              { label: 'Email', key: 'email', type: 'email', placeholder: 'you@example.com' },
+              { label: 'Password', key: 'password', type: 'password', placeholder: '••••••••' },
+            ].map(field => (
+              <div key={field.key} style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', color: '#9CA3AF', fontSize: '13px', marginBottom: '8px', fontWeight: '500' }}>{field.label}</label>
+                <input
+                  type={field.type}
+                  value={(form as any)[field.key]}
+                  onChange={e => setForm({ ...form, [field.key]: e.target.value })}
+                  placeholder={field.placeholder}
+                  required={field.key !== 'full_name'}
+                  style={inputStyle}
+                  onFocus={e => e.target.style.borderColor = 'rgba(99,102,241,0.6)'}
+                  onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+                />
+              </div>
+            ))}
+
+            <button
+              type="submit"
+              disabled={loading}
+              style={{ width: '100%', background: loading ? 'rgba(99,102,241,0.5)' : G.purple, border: 'none', borderRadius: '12px', padding: '14px', color: 'white', fontSize: '15px', fontWeight: '600', cursor: loading ? 'not-allowed' : 'pointer', boxShadow: '0 4px 20px rgba(99,102,241,0.4)', marginTop: '8px' }}
+            >
+              {loading ? 'Creating account...' : 'Create Account →'}
+            </button>
+          </form>
+        </div>
+
+        <p style={{ textAlign: 'center', color: '#6B7280', fontSize: '14px', marginTop: '24px' }}>
+          Already have an account?{' '}
+          <Link href="/login" style={{ color: '#818CF8', textDecoration: 'none', fontWeight: '600' }}>Sign in</Link>
         </p>
       </div>
     </div>

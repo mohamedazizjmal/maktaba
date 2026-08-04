@@ -5,129 +5,132 @@ import Link from 'next/link'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 
+const G = {
+  purple: 'linear-gradient(135deg, #6366F1, #A855F7)',
+  blue: 'linear-gradient(135deg, #3B82F6, #6366F1)',
+  green: 'linear-gradient(135deg, #10B981, #3B82F6)',
+  orange: 'linear-gradient(135deg, #F59E0B, #EF4444)',
+  pink: 'linear-gradient(135deg, #A855F7, #EC4899)',
+  text: { background: 'linear-gradient(135deg, #818CF8, #C084FC, #F472B6)', WebkitBackgroundClip: 'text' as const, WebkitTextFillColor: 'transparent' as const },
+}
+
 export default function ProfilePage() {
   const router = useRouter()
-  const { user, logout } = useAuthStore()
+  const { logout } = useAuthStore()
+  const [profile, setProfile] = useState<any>(null)
   const [shelves, setShelves] = useState<any[]>([])
   const [reviews, setReviews] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
-    if (!token) {
-      router.push('/login')
-      return
-    }
+    if (!token) { router.push('/login'); return }
     fetchData()
   }, [])
 
-const fetchData = async () => {
-  try {
-    const [shelvesRes, reviewsRes, profileRes] = await Promise.all([
-      api.get('/shelves/'),
-      api.get('/reviews/me'),
-      api.get('/auth/me')
-    ])
-    setShelves(shelvesRes.data)
-    setReviews(reviewsRes.data)
-    setProfile(profileRes.data)
-  } catch (err) {
-    console.error(err)
-  } finally {
-    setLoading(false)
-  }
-}
-  const handleLogout = () => {
-    logout()
-    router.push('/')
+  const fetchData = async () => {
+    try {
+      const [shelvesRes, reviewsRes, profileRes] = await Promise.all([
+        api.get('/shelves/'),
+        api.get('/reviews/me'),
+        api.get('/auth/me')
+      ])
+      setShelves(shelvesRes.data)
+      setReviews(reviewsRes.data)
+      setProfile(profileRes.data)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  // Stats
-  const [profile, setProfile] = useState<any>(null)
   const totalBooks = shelves.length
   const readBooks = shelves.filter(s => s.shelf_type === 'read').length
   const readingBooks = shelves.filter(s => s.shelf_type === 'reading').length
   const wantToReadBooks = shelves.filter(s => s.shelf_type === 'want_to_read').length
-  const totalReviews = reviews.length
-  const avgRating = reviews.length > 0
-    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-    : '—'
+  const avgRating = reviews.length > 0 ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : '—'
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="text-gray-400">Loading...</div>
+  if (loading) return (
+    <div style={{ minHeight: '100vh', background: '#0D0D1A', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>📚</div>
+        <p style={{ color: '#6B7280' }}>Loading your profile...</p>
       </div>
-    )
-  }
+    </div>
+  )
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div style={{ minHeight: '100vh', background: '#0D0D1A', color: 'white', fontFamily: 'Inter, sans-serif' }}>
+
       {/* Navbar */}
-      <nav className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
-        <Link href="/dashboard" className="text-gray-400 hover:text-white transition text-sm">
-          ← Back
+      <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 32px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(13,13,26,0.95)', backdropFilter: 'blur(20px)', position: 'sticky', top: 0, zIndex: 100 }}>
+        <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+          <span style={{ fontSize: '24px' }}>📚</span>
+          <span style={{ fontSize: '18px', fontWeight: '700', ...G.text }}>Maktaba</span>
         </Link>
-        <h1 className="text-xl font-bold text-blue-500">مكتبة Maktaba</h1>
-        <button onClick={handleLogout} className="text-sm text-gray-400 hover:text-white transition">
-          Logout
-        </button>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <Link href="/dashboard" style={{ color: '#9CA3AF', textDecoration: 'none', fontSize: '14px' }}>← Dashboard</Link>
+          <button onClick={() => { logout(); router.push('/') }} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#9CA3AF', padding: '8px 16px', borderRadius: '50px', cursor: 'pointer', fontSize: '13px' }}>
+            Logout
+          </button>
+        </div>
       </nav>
 
-      <div className="max-w-3xl mx-auto px-6 py-10">
+      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '48px 24px' }}>
 
         {/* Profile Header */}
-        <div className="flex items-center gap-6 mb-10">
-          <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center text-3xl font-bold">
-  {profile?.full_name?.[0]?.toUpperCase() || profile?.username?.[0]?.toUpperCase() || '?'}
-</div>
-<div>
-  <h1 className="text-2xl font-bold">{profile?.full_name || profile?.username}</h1>
-  <p className="text-gray-400">@{profile?.username}</p>
-  <p className="text-gray-500 text-sm">{profile?.email}</p>
-</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '40px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '32px' }}>
+          <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: G.purple, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', fontWeight: '800', flexShrink: 0, boxShadow: '0 8px 32px rgba(99,102,241,0.4)' }}>
+            {profile?.full_name?.[0]?.toUpperCase() || profile?.username?.[0]?.toUpperCase() || '?'}
+          </div>
+          <div>
+            <h1 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '4px' }}>{profile?.full_name || profile?.username}</h1>
+            <p style={{ color: '#818CF8', fontSize: '14px', marginBottom: '4px' }}>@{profile?.username}</p>
+            <p style={{ color: '#6B7280', fontSize: '13px' }}>{profile?.email}</p>
+          </div>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
           {[
-            { label: 'Total Books', value: totalBooks, icon: '📚' },
-            { label: 'Books Read', value: readBooks, icon: '✅' },
-            { label: 'Reading Now', value: readingBooks, icon: '📖' },
-            { label: 'Want to Read', value: wantToReadBooks, icon: '🔖' },
-            { label: 'Reviews', value: totalReviews, icon: '⭐' },
-            { label: 'Avg Rating', value: avgRating, icon: '🏆' },
-          ].map((stat) => (
-            <div key={stat.label} className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
-              <div className="text-2xl mb-1">{stat.icon}</div>
-              <div className="text-2xl font-bold text-white">{stat.value}</div>
-              <div className="text-xs text-gray-400 mt-1">{stat.label}</div>
+            { label: 'Total Books', value: totalBooks, gradient: G.purple, icon: '📚' },
+            { label: 'Books Read', value: readBooks, gradient: G.green, icon: '✅' },
+            { label: 'Reading Now', value: readingBooks, gradient: G.blue, icon: '📖' },
+            { label: 'Want to Read', value: wantToReadBooks, gradient: G.pink, icon: '🔖' },
+            { label: 'Reviews', value: reviews.length, gradient: G.orange, icon: '⭐' },
+            { label: 'Avg Rating', value: avgRating, gradient: G.orange, icon: '🏆' },
+          ].map(stat => (
+            <div key={stat.label} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px', textAlign: 'center', transition: 'all 0.2s' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = 'rgba(99,102,241,0.3)' }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}
+            >
+              <div style={{ fontSize: '24px', marginBottom: '8px' }}>{stat.icon}</div>
+              <div style={{ fontSize: '28px', fontWeight: '800', background: stat.gradient, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{stat.value}</div>
+              <div style={{ color: '#6B7280', fontSize: '12px', marginTop: '4px' }}>{stat.label}</div>
             </div>
           ))}
         </div>
 
         {/* Reading Progress */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-6">
-          <h2 className="font-semibold mb-4">Reading Progress</h2>
+        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '24px', marginBottom: '24px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '20px' }}>Reading Progress</h2>
           {totalBooks === 0 ? (
-            <p className="text-gray-500 text-sm">No books yet — start adding books!</p>
+            <p style={{ color: '#6B7280', fontSize: '14px' }}>No books yet — start adding books!</p>
           ) : (
-            <div className="space-y-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {[
-                { label: 'Read', count: readBooks, color: 'bg-green-500' },
-                { label: 'Reading', count: readingBooks, color: 'bg-blue-500' },
-                { label: 'Want to Read', count: wantToReadBooks, color: 'bg-gray-500' },
-              ].map((item) => (
+                { label: 'Read', count: readBooks, color: '#10B981' },
+                { label: 'Reading', count: readingBooks, color: '#6366F1' },
+                { label: 'Want to Read', count: wantToReadBooks, color: '#A855F7' },
+              ].map(item => (
                 <div key={item.label}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-400">{item.label}</span>
-                    <span className="text-white">{item.count}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ color: '#9CA3AF', fontSize: '13px' }}>{item.label}</span>
+                    <span style={{ color: 'white', fontSize: '13px', fontWeight: '600' }}>{item.count}</span>
                   </div>
-                  <div className="w-full bg-gray-800 rounded-full h-2">
-                    <div
-                      className={`${item.color} h-2 rounded-full transition-all`}
-                      style={{ width: totalBooks > 0 ? `${(item.count / totalBooks) * 100}%` : '0%' }}
-                    />
+                  <div style={{ width: '100%', background: 'rgba(255,255,255,0.06)', borderRadius: '50px', height: '8px', overflow: 'hidden' }}>
+                    <div style={{ width: `${totalBooks > 0 ? (item.count / totalBooks) * 100 : 0}%`, background: item.color, height: '100%', borderRadius: '50px', transition: 'width 0.6s ease', boxShadow: `0 0 10px ${item.color}60` }} />
                   </div>
                 </div>
               ))}
@@ -136,29 +139,25 @@ const fetchData = async () => {
         </div>
 
         {/* Recent Reviews */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-          <h2 className="font-semibold mb-4">Recent Reviews</h2>
+        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '24px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '20px' }}>Recent Reviews</h2>
           {reviews.length === 0 ? (
-            <p className="text-gray-500 text-sm">No reviews yet!</p>
+            <p style={{ color: '#6B7280', fontSize: '14px' }}>No reviews yet!</p>
           ) : (
-            <div className="space-y-4">
-              {reviews.slice(0, 3).map((review) => (
-                <div key={review.id} className="border-b border-gray-800 pb-4 last:border-0 last:pb-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-medium text-sm">{review.book_title}</h3>
-                    <div className="flex">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <span key={star} className={`text-sm ${star <= review.rating ? 'text-yellow-400' : 'text-gray-600'}`}>★</span>
-                      ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {reviews.slice(0, 3).map(review => (
+                <div key={review.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: '600' }}>{review.book_title}</h3>
+                    <div style={{ display: 'flex' }}>
+                      {[1,2,3,4,5].map(s => <span key={s} style={{ fontSize: '14px', color: s <= review.rating ? '#F59E0B' : '#374151' }}>★</span>)}
                     </div>
                   </div>
-                  {review.content && (
-                    <p className="text-gray-400 text-xs line-clamp-2">{review.content}</p>
-                  )}
+                  {review.content && <p style={{ color: '#9CA3AF', fontSize: '13px', lineHeight: '1.5' }}>{review.content}</p>}
                 </div>
               ))}
               {reviews.length > 3 && (
-                <Link href="/dashboard" className="text-blue-400 text-sm hover:underline">
+                <Link href="/dashboard" style={{ color: '#818CF8', fontSize: '14px', textDecoration: 'none' }}>
                   View all {reviews.length} reviews →
                 </Link>
               )}

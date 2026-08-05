@@ -121,6 +121,9 @@ export default function Dashboard() {
           <Link href="/chat" style={{ background: G.purple, padding: '8px 18px', borderRadius: '50px', color: 'white', textDecoration: 'none', fontSize: '13px', fontWeight: '600' }}>
             🤖 AI Chat
           </Link>
+          <Link href="/social" style={{ color: '#9CA3AF', textDecoration: 'none', fontSize: '13px' }}>
+          👥 Social
+            </Link>
           <Link href="/profile" style={{ color: '#9CA3AF', textDecoration: 'none', fontSize: '13px' }}>👤 Profile</Link>
           <button onClick={() => { logout(); router.push('/') }} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#9CA3AF', padding: '8px 16px', borderRadius: '50px', cursor: 'pointer', fontSize: '13px' }}>
             Logout

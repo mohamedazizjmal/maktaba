@@ -18,6 +18,8 @@ def add_to_shelf(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    from app.api.routes.social import log_activity
+
     existing = db.query(Shelf).filter(
         Shelf.user_id == current_user.id,
         Shelf.book_id == shelf_data.book_id
@@ -43,6 +45,23 @@ def add_to_shelf(
         db.refresh(shelf)
 
     book = db.query(Book).filter(Book.id == shelf.book_id).first()
+
+    # Log activity
+    activity_type = "added_to_shelf"
+    if shelf_data.shelf_type.value == "reading":
+        activity_type = "started_reading"
+    elif shelf_data.shelf_type.value == "read":
+        activity_type = "finished_reading"
+
+    log_activity(
+        db=db,
+        user_id=str(current_user.id),
+        activity_type=activity_type,
+        book_id=str(shelf.book_id),
+        book_title=book.title if book else None,
+        book_cover=book.cover_url if book else None,
+    )
+
     return {
         "id": shelf.id,
         "user_id": shelf.user_id,

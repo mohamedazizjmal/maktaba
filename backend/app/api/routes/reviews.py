@@ -18,12 +18,12 @@ def create_review(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Vérifie si le livre existe
+    from app.api.routes.social import log_activity
+
     book = db.query(Book).filter(Book.id == review_data.book_id).first()
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
 
-    # Vérifie si l'utilisateur a déjà reviewé ce livre
     existing = db.query(Review).filter(
         Review.user_id == current_user.id,
         Review.book_id == review_data.book_id
@@ -40,7 +40,6 @@ def create_review(
     )
     db.add(review)
 
-    # Met à jour le rating moyen du livre
     all_reviews = db.query(Review).filter(Review.book_id == review_data.book_id).all()
     total_rating = sum(r.rating for r in all_reviews) + review_data.rating
     book.average_rating = total_rating / (len(all_reviews) + 1)
@@ -48,6 +47,17 @@ def create_review(
 
     db.commit()
     db.refresh(review)
+
+    # Log activity
+    log_activity(
+        db=db,
+        user_id=str(current_user.id),
+        activity_type="wrote_review",
+        book_id=str(review_data.book_id),
+        book_title=book.title,
+        book_cover=book.cover_url,
+        extra_data={"rating": review_data.rating}
+    )
 
     return {
         "id": review.id,
@@ -67,7 +77,6 @@ def get_book_reviews(
     book_id: UUID,
     db: Session = Depends(get_db)
 ):
-    """Retourne toutes les reviews d'un livre."""
     reviews = db.query(Review).filter(Review.book_id == book_id).all()
     result = []
     for review in reviews:
@@ -92,7 +101,6 @@ def get_my_reviews(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Retourne toutes les reviews de l'utilisateur connecté."""
     reviews = db.query(Review).filter(Review.user_id == current_user.id).all()
     result = []
     for review in reviews:

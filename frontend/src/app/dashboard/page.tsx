@@ -121,6 +121,9 @@ export default function Dashboard() {
           <Link href="/chat" style={{ background: G.purple, padding: '8px 18px', borderRadius: '50px', color: 'white', textDecoration: 'none', fontSize: '13px', fontWeight: '600' }}>
             🤖 AI Chat
           </Link>
+          <Link href="/challenges" style={{ color: '#9CA3AF', textDecoration: 'none', fontSize: '13px' }}>
+          🏆 Challenge
+          </Link>
           <Link href="/social" style={{ color: '#9CA3AF', textDecoration: 'none', fontSize: '13px' }}>
           👥 Social
             </Link>

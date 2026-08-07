@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.database import engine, Base
-from app.api.routes import auth, books, shelves, reviews, recommendations, chatbot, social, challenges
+from app.api.routes import auth, books, shelves, reviews, recommendations, chatbot, social, challenges, clubs
 
 Base.metadata.create_all(bind=engine)
 
@@ -30,6 +30,7 @@ app.include_router(recommendations.router, prefix="/api")
 app.include_router(chatbot.router, prefix="/api")
 app.include_router(social.router, prefix="/api")
 app.include_router(challenges.router, prefix="/api")
+app.include_router(clubs.router, prefix="/api")
 
 @app.get("/")
 def root():

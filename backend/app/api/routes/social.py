@@ -20,6 +20,8 @@ def follow_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    from app.api.routes.notifications import create_notification
+
     if str(user_id) == str(current_user.id):
         raise HTTPException(status_code=400, detail="Cannot follow yourself")
 
@@ -40,8 +42,17 @@ def follow_user(
     follow = Follow(follower_id=current_user.id, following_id=user_id)
     db.add(follow)
     db.commit()
-    return {"message": "Following", "following": True}
 
+    # Notification
+    create_notification(
+        db=db,
+        user_id=str(user_id),
+        type="new_follower",
+        message=f"@{current_user.username} started following you!",
+        link="/social"
+    )
+
+    return {"message": "Following", "following": True}
 
 @router.get("/followers")
 def get_followers(

@@ -14,13 +14,6 @@ const G = {
   text: { background: 'linear-gradient(135deg, #818CF8, #C084FC, #F472B6)', WebkitBackgroundClip: 'text' as const, WebkitTextFillColor: 'transparent' as const },
 }
 
-const card = (color = 'rgba(255,255,255,0.03)', border = 'rgba(255,255,255,0.08)') => ({
-  background: color,
-  border: `1px solid ${border}`,
-  borderRadius: '20px',
-  padding: '24px',
-})
-
 export default function Dashboard() {
   const router = useRouter()
   const { user, logout } = useAuthStore()
@@ -33,6 +26,9 @@ export default function Dashboard() {
   const [recommendations, setRecommendations] = useState<any[]>([])
   const [reviewForm, setReviewForm] = useState({ book_id: '', book_title: '', rating: 5, content: '', contains_spoiler: false })
   const [showReviewForm, setShowReviewForm] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [showNotifications, setShowNotifications] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -40,11 +36,32 @@ export default function Dashboard() {
     fetchShelves()
     fetchMyReviews()
     fetchRecommendations()
+    fetchUnreadCount()
   }, [])
 
-  const fetchShelves = async () => { try { const r = await api.get('/shelves/'); setShelves(r.data) } catch (e) { console.error(e) } }
-  const fetchMyReviews = async () => { try { const r = await api.get('/reviews/me'); setMyReviews(r.data) } catch (e) { console.error(e) } }
-  const fetchRecommendations = async () => { try { const r = await api.get('/recommendations/'); setRecommendations(r.data.recommendations) } catch (e) { console.error(e) } }
+  const fetchShelves = async () => {
+    try { const r = await api.get('/shelves/'); setShelves(r.data) } catch (e) { console.error(e) }
+  }
+
+  const fetchMyReviews = async () => {
+    try { const r = await api.get('/reviews/me'); setMyReviews(r.data) } catch (e) { console.error(e) }
+  }
+
+  const fetchRecommendations = async () => {
+    try { const r = await api.get('/recommendations/'); setRecommendations(r.data.recommendations) } catch (e) { console.error(e) }
+  }
+
+  const fetchUnreadCount = async () => {
+    try { const r = await api.get('/notifications/unread-count'); setUnreadCount(r.data.count) } catch (e) { console.error(e) }
+  }
+
+  const fetchNotifications = async () => {
+    try { const r = await api.get('/notifications/'); setNotifications(r.data) } catch (e) { console.error(e) }
+  }
+
+  const markAllRead = async () => {
+    try { await api.patch('/notifications/read-all'); setUnreadCount(0); fetchNotifications() } catch (e) { console.error(e) }
+  }
 
   const searchBooks = async () => {
     if (!search.trim()) return
@@ -85,6 +102,8 @@ export default function Dashboard() {
     try { await api.delete(`/reviews/${id}`); fetchMyReviews() } catch (e) { console.error(e) }
   }
 
+  const handleLogout = () => { logout(); router.push('/') }
+
   const Stars = ({ value, onChange }: { value: number, onChange?: (v: number) => void }) => (
     <div style={{ display: 'flex', gap: '4px' }}>
       {[1,2,3,4,5].map(s => (
@@ -118,20 +137,48 @@ export default function Dashboard() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ color: '#9CA3AF', fontSize: '14px' }}>Hey, {user?.full_name || user?.username} 👋</span>
+
+          {/* Notifications */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => { setShowNotifications(!showNotifications); fetchNotifications(); markAllRead() }}
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50px', padding: '8px 16px', color: 'white', cursor: 'pointer', fontSize: '16px', position: 'relative' }}
+            >
+              🔔
+              {unreadCount > 0 && (
+                <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: 'linear-gradient(135deg, #EF4444, #F59E0B)', borderRadius: '50%', width: '18px', height: '18px', fontSize: '10px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            {showNotifications && (
+              <div style={{ position: 'absolute', top: '48px', right: 0, width: '320px', background: '#1A1A2E', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '16px', zIndex: 200, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '12px' }}>Notifications</h3>
+                {notifications.length === 0 ? (
+                  <p style={{ color: '#6B7280', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>No notifications yet</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
+                    {notifications.map(n => (
+                      <div key={n.id} style={{ background: n.is_read ? 'transparent' : 'rgba(99,102,241,0.1)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', padding: '10px 12px' }}>
+                        <p style={{ fontSize: '13px', color: '#E5E7EB', marginBottom: '4px' }}>{n.message}</p>
+                        <p style={{ fontSize: '11px', color: '#4B5563' }}>{new Date(n.created_at).toLocaleDateString()}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           <Link href="/chat" style={{ background: G.purple, padding: '8px 18px', borderRadius: '50px', color: 'white', textDecoration: 'none', fontSize: '13px', fontWeight: '600' }}>
             🤖 AI Chat
           </Link>
-          <Link href="/clubs" style={{ color: '#9CA3AF', textDecoration: 'none', fontSize: '13px' }}>
-          📚 Clubs
-          </Link>
-          <Link href="/challenges" style={{ color: '#9CA3AF', textDecoration: 'none', fontSize: '13px' }}>
-          🏆 Challenge
-          </Link>
-          <Link href="/social" style={{ color: '#9CA3AF', textDecoration: 'none', fontSize: '13px' }}>
-          👥 Social
-            </Link>
+          <Link href="/social" style={{ color: '#9CA3AF', textDecoration: 'none', fontSize: '13px' }}>👥 Social</Link>
+          <Link href="/clubs" style={{ color: '#9CA3AF', textDecoration: 'none', fontSize: '13px' }}>📚 Clubs</Link>
+          <Link href="/challenges" style={{ color: '#9CA3AF', textDecoration: 'none', fontSize: '13px' }}>🏆 Challenge</Link>
           <Link href="/profile" style={{ color: '#9CA3AF', textDecoration: 'none', fontSize: '13px' }}>👤 Profile</Link>
-          <button onClick={() => { logout(); router.push('/') }} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#9CA3AF', padding: '8px 16px', borderRadius: '50px', cursor: 'pointer', fontSize: '13px' }}>
+          <button onClick={handleLogout} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#9CA3AF', padding: '8px 16px', borderRadius: '50px', cursor: 'pointer', fontSize: '13px' }}>
             Logout
           </button>
         </div>
@@ -142,7 +189,7 @@ export default function Dashboard() {
         {/* Stats Row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '32px' }}>
           {shelfStats.map((stat) => (
-            <div key={stat.label} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px', textAlign: 'center' }}
+            <div key={stat.label} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '20px', textAlign: 'center', transition: 'all 0.2s', cursor: 'pointer' }}
               onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = 'rgba(99,102,241,0.4)' }}
               onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}
             >

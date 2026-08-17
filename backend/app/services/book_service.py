@@ -6,6 +6,7 @@ from typing import List, Optional
 
 OPEN_LIBRARY_URL = "https://openlibrary.org"
 
+
 async def search_open_library(query: str, limit: int = 10) -> List[OpenLibraryBook]:
     """Recherche des livres sur Open Library API."""
     try:
@@ -60,14 +61,18 @@ async def search_open_library(query: str, limit: int = 10) -> List[OpenLibraryBo
 
 async def get_book_details(ol_id: str) -> Optional[dict]:
     """Récupère les détails complets d'un livre depuis Open Library."""
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{OPEN_LIBRARY_URL}/works/{ol_id}.json",
-            timeout=10.0
-        )
-        if response.status_code != 200:
-            return None
-        return response.json()
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(
+                f"{OPEN_LIBRARY_URL}/works/{ol_id}.json",
+                timeout=15.0
+            )
+            if response.status_code != 200:
+                return None
+            return response.json()
+    except Exception as e:
+        print(f"Open Library details error: {e}")
+        return None
 
 
 def save_book_to_db(db: Session, book_data: OpenLibraryBook) -> Book:
@@ -99,11 +104,14 @@ def get_books_from_db(db: Session, skip: int = 0, limit: int = 20) -> List[Book]
 
 
 def get_book_by_id(db: Session, book_id: str) -> Optional[Book]:
-    return db.query(Book).filter(Book.id == book_id).first()
+    import uuid
+    try:
+        return db.query(Book).filter(Book.id == uuid.UUID(book_id)).first()
+    except:
+        return None
 
 
 def search_books_in_db(db: Session, query: str) -> List[Book]:
     return db.query(Book).filter(
         Book.title.ilike(f"%{query}%")
     ).limit(20).all()
-        

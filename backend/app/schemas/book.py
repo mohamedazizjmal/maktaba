@@ -21,7 +21,7 @@ class BookResponse(BaseModel):
     authors: Optional[List[str]] = []
     description: Optional[str] = None
     cover_url: Optional[str] = None
-    genres: Optional[List[str]] = []
+    genres: Optional[List[str]] = None
     publish_year: Optional[int] = None
     page_count: Optional[int] = None
     language: Optional[str] = None

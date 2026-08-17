@@ -4,6 +4,12 @@ import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
+import toast from 'react-hot-toast'
+
+const G = {
+  purple: 'linear-gradient(135deg, #6366F1, #A855F7)',
+  text: { background: 'linear-gradient(135deg, #818CF8, #C084FC, #F472B6)', WebkitBackgroundClip: 'text' as const, WebkitTextFillColor: 'transparent' as const },
+}
 
 export default function BookPage() {
   const router = useRouter()
@@ -15,11 +21,7 @@ export default function BookPage() {
   const [reviews, setReviews] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [shelfType, setShelfType] = useState<string | null>(null)
-  const [reviewForm, setReviewForm] = useState({
-    rating: 5,
-    content: '',
-    contains_spoiler: false
-  })
+  const [reviewForm, setReviewForm] = useState({ rating: 5, content: '', contains_spoiler: false })
   const [showReviewForm, setShowReviewForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
@@ -44,9 +46,7 @@ export default function BookPage() {
     try {
       const res = await api.get(`/reviews/book/${bookId}`)
       setReviews(res.data)
-    } catch (err) {
-      console.error(err)
-    }
+    } catch (err) { console.error(err) }
   }
 
   const checkShelfStatus = async () => {
@@ -54,22 +54,15 @@ export default function BookPage() {
       const res = await api.get('/shelves/')
       const shelf = res.data.find((s: any) => s.book_id === bookId)
       if (shelf) setShelfType(shelf.shelf_type)
-    } catch (err) {
-      console.error(err)
-    }
+    } catch (err) { console.error(err) }
   }
 
   const addToShelf = async (type: string) => {
     try {
-      await api.post('/shelves/', {
-        book_id: bookId,
-        shelf_type: type,
-        progress_pages: 0
-      })
+      await api.post('/shelves/', { book_id: bookId, shelf_type: type, progress_pages: 0 })
       setShelfType(type)
-    } catch (err) {
-      console.error(err)
-    }
+      toast.success(`Added to ${type.replace(/_/g, ' ')}!`)
+    } catch (err) { console.error(err) }
   }
 
   const submitReview = async () => {
@@ -84,105 +77,119 @@ export default function BookPage() {
       setShowReviewForm(false)
       fetchReviews()
       fetchBook()
+      toast.success('Review submitted!')
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Error submitting review')
+      toast.error(err.response?.data?.detail || 'Error submitting review')
     } finally {
       setSubmitting(false)
     }
   }
 
-  const StarRating = ({ value, onChange }: { value: number, onChange?: (v: number) => void }) => (
-    <div className="flex gap-1">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <button
-          key={star}
-          onClick={() => onChange && onChange(star)}
-          className={`text-2xl transition ${star <= value ? 'text-yellow-400' : 'text-gray-600'} ${onChange ? 'hover:text-yellow-300 cursor-pointer' : 'cursor-default'}`}
-        >
+  const Stars = ({ value, onChange }: { value: number, onChange?: (v: number) => void }) => (
+    <div style={{ display: 'flex', gap: '4px' }}>
+      {[1, 2, 3, 4, 5].map(star => (
+        <span key={star} onClick={() => onChange?.(star)}
+          style={{ fontSize: '22px', cursor: onChange ? 'pointer' : 'default', color: star <= value ? '#F59E0B' : '#374151', transition: 'color 0.15s' }}>
           ★
-        </button>
+        </span>
       ))}
     </div>
   )
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="text-gray-400 text-lg">Loading...</div>
+  if (loading) return (
+    <div style={{ minHeight: '100vh', background: '#0D0B1E', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>📚</div>
+        <p style={{ color: '#6B7280' }}>Loading book...</p>
       </div>
-    )
-  }
+    </div>
+  )
 
-  if (!book) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-4xl mb-4">📚</p>
-          <p className="text-gray-400">Book not found</p>
-          <Link href="/dashboard" className="text-blue-400 hover:underline mt-4 block">
-            ← Back to dashboard
-          </Link>
-        </div>
+  if (!book) return (
+    <div style={{ minHeight: '100vh', background: '#0D0B1E', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ textAlign: 'center' }}>
+        <p style={{ fontSize: '48px', marginBottom: '16px' }}>📚</p>
+        <p style={{ color: '#6B7280', marginBottom: '16px' }}>Book not found</p>
+        <Link href="/home" style={{ color: '#818CF8', textDecoration: 'none' }}>← Back to home</Link>
       </div>
-    )
-  }
+    </div>
+  )
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div style={{ minHeight: '100vh', background: '#0D0B1E', color: 'white', fontFamily: 'Inter, sans-serif', position: 'relative' }}>
+
+      {/* Background glow */}
+      <div style={{ position: 'fixed', top: '-100px', right: '-100px', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(168,85,247,0.15) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
+
       {/* Navbar */}
-      <nav className="border-b border-gray-800 px-6 py-4 flex items-center gap-4">
-        <Link href="/dashboard" className="text-gray-400 hover:text-white transition text-sm">
+      <nav style={{ position: 'sticky', top: 0, zIndex: 100, display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 32px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(13,11,30,0.95)', backdropFilter: 'blur(20px)' }}>
+        <Link href="/home" style={{ color: '#6B7280', textDecoration: 'none', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
           ← Back
         </Link>
-        <h1 className="text-xl font-bold text-blue-500">مكتبة Maktaba</h1>
+        <span style={{ color: 'rgba(255,255,255,0.2)' }}>|</span>
+        <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{book.title}</span>
       </nav>
 
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '48px 24px', position: 'relative', zIndex: 1 }}>
 
         {/* Book Header */}
-        <div className="flex gap-8 mb-10">
-          {book.cover_url ? (
-            <img
-              src={book.cover_url}
-              alt={book.title}
-              className="w-36 h-52 object-cover rounded-xl flex-shrink-0 shadow-lg"
-            />
-          ) : (
-            <div className="w-36 h-52 bg-gray-800 rounded-xl flex items-center justify-center flex-shrink-0">
-              <span className="text-5xl">📚</span>
-            </div>
-          )}
+        <div style={{ display: 'flex', gap: '40px', marginBottom: '48px', flexWrap: 'wrap' }}>
 
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-2">{book.title}</h1>
-            <p className="text-gray-400 text-lg mb-3">
+          {/* Cover */}
+          <div style={{ flexShrink: 0 }}>
+            {book.cover_url ? (
+              <img src={book.cover_url} alt={book.title}
+                style={{ width: '200px', height: '290px', objectFit: 'cover', borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(168,85,247,0.15)' }}
+              />
+            ) : (
+              <div style={{ width: '200px', height: '290px', background: 'linear-gradient(135deg, rgba(99,102,241,0.3), rgba(168,85,247,0.3))', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '64px' }}>
+                📚
+              </div>
+            )}
+          </div>
+
+          {/* Info */}
+          <div style={{ flex: 1, minWidth: '280px' }}>
+            <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '8px', lineHeight: '1.2', letterSpacing: '-0.5px' }}>
+              {book.title}
+            </h1>
+            <p style={{ fontSize: '18px', color: '#9CA3AF', marginBottom: '16px' }}>
               {book.authors?.join(', ') || 'Unknown author'}
             </p>
 
-            <div className="flex items-center gap-4 mb-4 flex-wrap">
+            {/* Meta info */}
+            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '20px' }}>
               {book.publish_year && (
-                <span className="text-sm text-gray-500">📅 {book.publish_year}</span>
+                <span style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50px', padding: '4px 14px', fontSize: '13px', color: '#9CA3AF' }}>
+                  📅 {book.publish_year}
+                </span>
               )}
               {book.page_count && (
-                <span className="text-sm text-gray-500">📄 {book.page_count} pages</span>
+                <span style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50px', padding: '4px 14px', fontSize: '13px', color: '#9CA3AF' }}>
+                  📄 {book.page_count} pages
+                </span>
               )}
               {book.language && (
-                <span className="text-sm text-gray-500">🌍 {book.language.toUpperCase()}</span>
+                <span style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50px', padding: '4px 14px', fontSize: '13px', color: '#9CA3AF' }}>
+                  🌍 {book.language.toUpperCase()}
+                </span>
               )}
             </div>
 
+            {/* Rating */}
             {book.average_rating > 0 && (
-              <div className="flex items-center gap-2 mb-4">
-                <StarRating value={Math.round(book.average_rating)} />
-                <span className="text-yellow-400 font-semibold">{book.average_rating.toFixed(1)}</span>
-                <span className="text-gray-500 text-sm">({book.ratings_count} ratings)</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                <Stars value={Math.round(book.average_rating)} />
+                <span style={{ color: '#F59E0B', fontWeight: '700', fontSize: '18px' }}>{book.average_rating.toFixed(1)}</span>
+                <span style={{ color: '#4B5563', fontSize: '14px' }}>({book.ratings_count} ratings)</span>
               </div>
             )}
 
+            {/* Genres */}
             {book.genres && book.genres.length > 0 && (
-              <div className="flex gap-2 flex-wrap mb-4">
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px' }}>
                 {book.genres.slice(0, 4).map((genre: string) => (
-                  <span key={genre} className="text-xs bg-gray-800 text-gray-300 px-3 py-1 rounded-full">
+                  <span key={genre} style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: '#818CF8', borderRadius: '50px', padding: '4px 14px', fontSize: '12px', fontWeight: '500' }}>
                     {genre}
                   </span>
                 ))}
@@ -190,52 +197,60 @@ export default function BookPage() {
             )}
 
             {/* Shelf buttons */}
-            <div className="flex gap-2 flex-wrap">
-              {['want_to_read', 'reading', 'read'].map((type) => (
-                <button
-                  key={type}
-                  onClick={() => addToShelf(type)}
-                  className={`text-sm px-4 py-2 rounded-lg transition ${
-                    shelfType === type
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-                  }`}
-                >
-                  {type === 'want_to_read' ? '📖 Want to Read'
-                    : type === 'reading' ? '📚 Reading'
-                    : '✅ Read'}
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
+              {[
+                { type: 'want_to_read', label: '📖 Want to Read', activeColor: '#3B82F6' },
+                { type: 'reading', label: '📚 Reading', activeColor: '#6366F1' },
+                { type: 'read', label: '✅ Read', activeColor: '#10B981' },
+              ].map(btn => (
+                <button key={btn.type} onClick={() => addToShelf(btn.type)} style={{
+                  background: shelfType === btn.type ? btn.activeColor : 'rgba(255,255,255,0.06)',
+                  border: shelfType === btn.type ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '50px', padding: '10px 20px', color: 'white',
+                  cursor: 'pointer', fontSize: '14px', fontWeight: '500',
+                  transition: 'all 0.2s',
+                  boxShadow: shelfType === btn.type ? `0 4px 20px ${btn.activeColor}50` : 'none',
+                }}>
+                  {btn.label}
                 </button>
               ))}
-              <Link
-                href={`/chat?book=${bookId}`}
-                className="text-sm px-4 py-2 rounded-lg bg-purple-900 hover:bg-purple-800 text-purple-300 transition"
-              >
-                🤖 Ask AI about this book
-              </Link>
             </div>
+
+            {/* AI Chat button */}
+            <Link href={`/chat`} style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              background: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.3)',
+              borderRadius: '50px', padding: '10px 20px', color: '#A855F7',
+              textDecoration: 'none', fontSize: '14px', fontWeight: '500',
+              transition: 'all 0.2s',
+            }}>
+              🤖 Ask AI about this book
+            </Link>
           </div>
         </div>
 
         {/* Description */}
         {book.description && (
-          <div className="mb-10">
-            <h2 className="text-xl font-bold mb-3">About this book</h2>
-            <p className="text-gray-300 leading-relaxed">{book.description}</p>
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', padding: '28px', marginBottom: '32px' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '16px', color: 'rgba(255,255,255,0.85)' }}>About this book</h2>
+            <p style={{ color: '#9CA3AF', lineHeight: '1.8', fontSize: '15px' }}>{book.description}</p>
           </div>
         )}
 
         {/* Reviews */}
         <div>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: '700' }}>
               Reviews
-              <span className="ml-2 text-sm text-gray-500 font-normal">({reviews.length})</span>
+              <span style={{ color: '#4B5563', fontWeight: '400', fontSize: '15px', marginLeft: '8px' }}>({reviews.length})</span>
             </h2>
             {user && (
-              <button
-                onClick={() => setShowReviewForm(!showReviewForm)}
-                className="text-sm bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition"
-              >
+              <button onClick={() => setShowReviewForm(!showReviewForm)} style={{
+                background: G.purple, border: 'none', borderRadius: '50px',
+                padding: '10px 20px', color: 'white', cursor: 'pointer',
+                fontSize: '14px', fontWeight: '600',
+                boxShadow: '0 4px 16px rgba(99,102,241,0.3)',
+              }}>
                 ✍️ Write a review
               </button>
             )}
@@ -243,82 +258,65 @@ export default function BookPage() {
 
           {/* Review Form */}
           {showReviewForm && (
-            <div className="bg-gray-900 border border-blue-800 rounded-xl p-6 mb-6">
-              <h3 className="font-semibold mb-4 text-blue-400">Your review</h3>
-              <div className="mb-4">
-                <label className="block text-sm text-gray-400 mb-2">Rating</label>
-                <StarRating
-                  value={reviewForm.rating}
-                  onChange={(v) => setReviewForm({ ...reviewForm, rating: v })}
-                />
+            <div style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '20px', padding: '24px', marginBottom: '24px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: '#818CF8' }}>Your review</h3>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', color: '#9CA3AF', fontSize: '13px', marginBottom: '8px' }}>Rating</label>
+                <Stars value={reviewForm.rating} onChange={v => setReviewForm({ ...reviewForm, rating: v })} />
               </div>
-              <div className="mb-4">
-                <label className="block text-sm text-gray-400 mb-2">Review</label>
-                <textarea
-                  value={reviewForm.content}
-                  onChange={(e) => setReviewForm({ ...reviewForm, content: e.target.value })}
-                  placeholder="What did you think of this book?"
-                  rows={4}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 resize-none"
-                />
+              <textarea
+                value={reviewForm.content}
+                onChange={e => setReviewForm({ ...reviewForm, content: e.target.value })}
+                placeholder="What did you think of this book?"
+                rows={4}
+                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '12px 16px', color: 'white', fontSize: '14px', resize: 'none', outline: 'none', marginBottom: '12px', boxSizing: 'border-box' }}
+                onFocus={e => e.target.style.borderColor = 'rgba(99,102,241,0.5)'}
+                onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                <input type="checkbox" checked={reviewForm.contains_spoiler} onChange={e => setReviewForm({ ...reviewForm, contains_spoiler: e.target.checked })} />
+                <label style={{ color: '#9CA3AF', fontSize: '13px' }}>Contains spoilers</label>
               </div>
-              <div className="flex items-center gap-2 mb-4">
-                <input
-                  type="checkbox"
-                  id="spoiler"
-                  checked={reviewForm.contains_spoiler}
-                  onChange={(e) => setReviewForm({ ...reviewForm, contains_spoiler: e.target.checked })}
-                  className="w-4 h-4"
-                />
-                <label htmlFor="spoiler" className="text-sm text-gray-400">Contains spoilers</label>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={submitReview}
-                  disabled={submitting}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-6 py-2 rounded-lg text-sm font-medium transition"
-                >
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button onClick={submitReview} disabled={submitting} style={{ background: G.purple, border: 'none', borderRadius: '12px', padding: '10px 24px', color: 'white', fontWeight: '600', cursor: 'pointer', opacity: submitting ? 0.6 : 1 }}>
                   {submitting ? 'Submitting...' : 'Submit Review'}
                 </button>
-                <button
-                  onClick={() => setShowReviewForm(false)}
-                  className="bg-gray-800 hover:bg-gray-700 px-6 py-2 rounded-lg text-sm font-medium transition"
-                >
+                <button onClick={() => setShowReviewForm(false)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '10px 24px', color: 'white', cursor: 'pointer' }}>
                   Cancel
                 </button>
               </div>
             </div>
           )}
 
-          {/* Reviews List */}
+          {/* Reviews list */}
           {reviews.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <p className="text-3xl mb-3">💬</p>
-              <p>No reviews yet — be the first to review this book!</p>
+            <div style={{ textAlign: 'center', padding: '48px 0', color: '#4B5563', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <p style={{ fontSize: '32px', marginBottom: '12px' }}>💬</p>
+              <p>No reviews yet — be the first!</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {reviews.map((review) => (
-                <div key={review.id} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-sm font-bold">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {reviews.map(review => (
+                <div key={review.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ width: '36px', height: '36px', background: G.purple, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '700', flexShrink: 0 }}>
                         {review.username?.[0]?.toUpperCase() || '?'}
                       </div>
-                      <span className="font-medium text-sm">{review.username}</span>
+                      <div>
+                        <p style={{ fontWeight: '600', fontSize: '14px', marginBottom: '4px' }}>@{review.username}</p>
+                        <Stars value={review.rating} />
+                      </div>
                     </div>
-                    <span className="text-gray-500 text-xs">
-                      {new Date(review.created_at).toLocaleDateString()}
-                    </span>
+                    <span style={{ color: '#4B5563', fontSize: '12px' }}>{new Date(review.created_at).toLocaleDateString()}</span>
                   </div>
-                  <StarRating value={review.rating} />
                   {review.contains_spoiler && (
-                    <span className="text-xs bg-red-900 text-red-300 px-2 py-0.5 rounded-full my-2 inline-block">
+                    <span style={{ background: 'rgba(239,68,68,0.15)', color: '#EF4444', borderRadius: '50px', padding: '2px 10px', fontSize: '11px', display: 'inline-block', marginBottom: '8px' }}>
                       ⚠️ Spoiler
                     </span>
                   )}
                   {review.content && (
-                    <p className="text-gray-300 text-sm mt-2">{review.content}</p>
+                    <p style={{ color: '#9CA3AF', fontSize: '14px', lineHeight: '1.7', marginTop: '8px' }}>{review.content}</p>
                   )}
                 </div>
               ))}

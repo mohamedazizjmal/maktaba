@@ -1,10 +1,18 @@
+import logging
 from groq import Groq
 from sqlalchemy.orm import Session
 from app.models.book import Book
 from app.core.config import settings
 import httpx
 
+logger = logging.getLogger(__name__)
+
 client = Groq(api_key=settings.GROQ_API_KEY)
+
+FALLBACK_MESSAGE = (
+    "Sorry, I couldn't generate a response for that. Could you try rephrasing your question?"
+)
+
 
 async def get_book_context(book_id: str, db: Session) -> str:
     """Récupère le contexte du livre depuis la base + Open Library."""
@@ -94,14 +102,29 @@ Always respond in the same language the user writes in."""
 
     messages.append({"role": "user", "content": message})
 
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=messages,
-        max_tokens=500,
-        temperature=0.7,
-    )
+    try:
+        response = client.chat.completions.create(
+            model="qwen/qwen3.6-27b",
+            messages=messages,
+            max_tokens=1500,
+            temperature=0.7,
+            reasoning_format="hidden",
+        )
+    except Exception:
+        logger.exception("Groq API call failed in chat_with_book")
+        return FALLBACK_MESSAGE
 
-    return response.choices[0].message.content
+    content = response.choices[0].message.content
+    finish_reason = response.choices[0].finish_reason
+
+    if not content or not content.strip():
+        logger.warning(
+            "Empty content from chat_with_book. finish_reason=%s book_id=%s message=%r",
+            finish_reason, book_id, message,
+        )
+        return FALLBACK_MESSAGE
+
+    return content
 
 
 async def general_book_chat(
@@ -128,11 +151,26 @@ Always respond in the same language the user writes in."""
 
     messages.append({"role": "user", "content": message})
 
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=messages,
-        max_tokens=500,
-        temperature=0.7,
-    )
+    try:
+        response = client.chat.completions.create(
+            model="qwen/qwen3.6-27b",
+            messages=messages,
+            max_tokens=1500,
+            temperature=0.7,
+            reasoning_format="hidden",
+        )
+    except Exception:
+        logger.exception("Groq API call failed in general_book_chat")
+        return FALLBACK_MESSAGE
 
-    return response.choices[0].message.content
+    content = response.choices[0].message.content
+    finish_reason = response.choices[0].finish_reason
+
+    if not content or not content.strip():
+        logger.warning(
+            "Empty content from general_book_chat. finish_reason=%s message=%r",
+            finish_reason, message,
+        )
+        return FALLBACK_MESSAGE
+
+    return content
